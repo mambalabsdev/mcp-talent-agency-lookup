@@ -1,0 +1,33 @@
+{
+  "name": "mcp-talent-agency-lookup",
+  "displayName": "Influencer Talent Agency Lookup",
+  "version": "1.0.1",
+  "description": "Match an influencer to their talent agency, or an agency to its public creator roster.",
+  "author": {
+    "name": "Mamba Labs",
+    "email": "labs@mambamindsetgrowth.com"
+  },
+  "homepage": "https://mambabuilt.com",
+  "repository": "https://github.com/mambalabsdev/mcp-talent-agency-lookup",
+  "license": "MIT",
+  "logo": "https://mmg-brand-assets.netlify.app/apify-actor-pngs/apify_webhook.png",
+  "category": "productivity",
+  "tags": [
+    "mcp",
+    "influencer-marketing",
+    "talent-agency",
+    "creator-roster",
+    "apify",
+    "clay"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "influencer-marketing",
+    "talent-agency",
+    "creator-roster",
+    "apify",
+    "clay"
+  ],
+  "mcpServers": ".mcp.json"
+}

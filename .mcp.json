@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "mamba-talent-agency-lookup": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@mambalabsdev/mcp-talent-agency-lookup"
+      ],
+      "env": {
+        "APIFY_TOKEN": "your-apify-token"
+      }
+    }
+  }
+}
