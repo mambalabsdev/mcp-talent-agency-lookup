@@ -197,34 +197,91 @@ const server = new McpServer({
 });
 
 // Influencer Talent Agency Lookup (immutable actor ID zCuX4Mgyg6JvXgGzd)
+const ACTOR_ID = "zCuX4Mgyg6JvXgGzd";
+const ACTOR_LABEL = "Influencer Talent Agency Lookup";
+
+// Input fields, defined once and shared by the three tools. Descriptions mirror
+// the live actor input schema (test/fixtures/live-input-schema.json).
+const fields = {
+  handles: z.array(z.string()).optional().describe("One per line. A profile URL on any supported platform (https://www.tiktok.com/@name, https://www.instagram.com/name/, https://www.youtube.com/@name, a Pinterest, Twitch, or Threads profile, an Apple Podcasts show page, or a Spotify show), or platform:@handle (tiktok:@name). A bare @handle needs `platforms` and is looked up on each listed platform. One entry is a single run; a list is a batch. Duplicates are removed before any fetch."),
+  platforms: z.array(z.enum(["tiktok", "instagram", "youtube", "pinterest", "twitch", "threads", "podcast"])).optional().describe("Which platforms a bare @handle is looked up on. A full profile URL carries its own platform and ignores this. This actor does not search; pass the creators you want read. Supported: TikTok, Instagram, YouTube, Pinterest, Twitch, Threads, and podcasts. Not X, not Facebook pages, not LinkedIn."),
+  agency_domains: z.array(z.string()).optional().describe("Agency to roster: one domain per line (for example viralnation.com). Returns one row per creator on the agency's public roster."),
+  agency_names: z.array(z.string()).optional().describe("Agency to roster by name when you do not have the domain. Exact or partial name match against the list."),
+  render_unreadable_pages: z.boolean().optional().describe("Off by default. Some agency roster pages build their talent grid in the browser and return an empty shell to a plain fetch, so the roster reads as empty. Turn this on to render those pages in a headless browser and read the roster from the rendered page. Charged per page rendered (event browser-render) to cover the browser compute, and only when the rendered page comes back readable. A page that answers with a bot challenge is recorded as blocked and is never rendered."),
+  escalate_on_block: z.boolean().optional().describe("On by default. A profile fetch that comes back as a bot detection page is retried once over the residential proxy. On Instagram the bio, bio link, and following are read from the profile page over residential when the embed and the datacenter API did not carry them, and a page that comes back readable charges instagram-bio-fetch ($0.010). Uncheck it to never pay that event: a blocked profile then returns a labeled error row, and Instagram rows keep an empty bio and bio link on about half of the reads."),
+  batch_size: z.number().int().min(1).max(10).optional().describe("Rows fetched at once. Leave empty for the measured per platform default; the measurement is in the actor README, https://apify.com/mambalabs/talent-agency-lookup#-batch-or-single. Higher is faster and, above the measured point, loses rows."),
+  // Shared pool toggle. The actor input field shipped in build 0.1.11; this mirror exists so an
+  // MCP caller can turn the contribution off.
+  contribute_to_shared_pool: z.boolean().optional().describe("On by default. The run contributes the public records it finds to a shared creator and agency pool that all users of this actor read from, so a later run reads what this one found. Only public data that is already in your own output rows is sent: nothing from your Apify account, your input list, your API keys, or your own notes. Nothing is charged for a contribution. Turn this off and the run still reads the pool and writes nothing to it. Default: true."),
+};
+
+const PRICING =
+  "Charges $0.001 per run (actor-start) plus $0.008 per row returned (agency-lookup), $0.004 per agency roster page rendered in the headless browser when render_unreadable_pages is on and the page comes back readable (browser-render), and $0.01 per Instagram bio fetch over the residential proxy when escalate_on_block is on and one is needed (instagram-bio-fetch).";
+const POOL =
+  "Contributes the public records it finds to a shared creator and agency pool that all users of this actor read from; set contribute_to_shared_pool to false to read the pool and write nothing. A contribution is not charged.";
+const COVERAGE =
+  "The agency list is seeded from 13 public directories (143 agencies and 557 roster creators when the actor was published) and grows through the shared pool; coverage is partial and every row says how it matched.";
+const LIMITS =
+  "It does not search for creators and does not read X, Facebook pages, or LinkedIn. Requires an APIFY_TOKEN and consumes Apify credits. Read only.";
+
+const annotations = (title: string) => ({
+  title,
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+});
+
+const callActor = (args: Record<string, unknown>) =>
+  runActor(ACTOR_ID, ACTOR_LABEL, compact(args));
+
+server.registerTool(
+  "lookup_agency_for_creator",
+  {
+    title: "Find the Talent Agency Behind an Influencer",
+    description:
+      `Creator to agency. Pass creator handles or profile URLs (TikTok, Instagram, YouTube, Pinterest, Twitch, Threads, or a podcast) and get one row per creator with the talent agency that represents them, its domain, its public contact, and agency_match_method (email_domain_exact, email_domain_parent, public_roster, bio_wording, or no_match with the email domains tried in error_reason). Use list_agency_roster for the other direction. ${COVERAGE} ${PRICING} ${POOL} ${LIMITS}`,
+    annotations: annotations("Find the Talent Agency Behind an Influencer"),
+    inputSchema: {
+      handles: fields.handles,
+      platforms: fields.platforms,
+      escalate_on_block: fields.escalate_on_block,
+      batch_size: fields.batch_size,
+      contribute_to_shared_pool: fields.contribute_to_shared_pool,
+    },
+  },
+  async (args) => callActor(args as Record<string, unknown>),
+);
+
+server.registerTool(
+  "list_agency_roster",
+  {
+    title: "List an Influencer Talent Agency's Roster",
+    description:
+      `Agency to roster. Pass agency domains or agency names and get one row per creator on the agency's public roster, with platform, handle, and profile URL. Use lookup_agency_for_creator for the other direction. ${COVERAGE} ${PRICING} ${POOL} ${LIMITS}`,
+    annotations: annotations("List an Influencer Talent Agency's Roster"),
+    inputSchema: {
+      agency_domains: fields.agency_domains,
+      agency_names: fields.agency_names,
+      render_unreadable_pages: fields.render_unreadable_pages,
+      contribute_to_shared_pool: fields.contribute_to_shared_pool,
+    },
+  },
+  async (args) => callActor(args as Record<string, unknown>),
+);
+
+// The original combined tool, kept so existing callers keep working. It runs
+// both directions in one call and exposes every buyer input of the live actor.
 server.registerTool(
   "lookup_influencer_talent_agency",
   {
     title: "Look Up an Influencer's Talent Agency or an Agency's Roster",
     description:
-      "Works in two directions. Creator to agency: pass creator handles or profile URLs and get one row per creator with the talent agency that represents them, its domain, its public contact, and agency_match_method (email_domain_exact, email_domain_parent, public_roster, bio_wording, or no_match with the email domains tried in error_reason). Agency to roster: pass agency domains or agency names and get one row per creator on the agency's public roster, with platform, handle, and profile URL. The agency list is seeded from 13 public directories and holds 143 agencies and 557 roster creators; coverage is partial and every row says how it matched. Supports TikTok, Instagram, YouTube, Pinterest, Twitch, Threads, and podcasts. Charges $0.001 per run plus $0.008 per row returned, $0.004 per agency roster page rendered in the headless browser when render_unreadable_pages is on and the rendered page comes back readable, and $0.01 per Instagram bio fetch when one is needed. Contributes the public records it finds to a shared creator and agency pool that all users of this actor read from, so a later run reads what this one found; `contribute_to_shared_pool` is on by default and turning it off leaves the run reading the pool and writing nothing. Only public data already in the returned rows is contributed, nothing from your Apify account or your input, and a contribution is not charged. Requires an APIFY_TOKEN and consumes Apify credits. Read only.",
-    annotations: {
-      title: "Look Up an Influencer's Talent Agency or an Agency's Roster",
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: true,
-    },
-    inputSchema: {
-    handles: z.array(z.string()).optional().describe("One per line. A profile URL on any supported platform (https://www.tiktok.com/@name, https://www.instagram.com/name/, https://www.youtube.com/@name, a Pinterest, Twitch, or Threads profile, an Apple Podcasts show page, or a Spotify show), or platform:@handle (tiktok:@name). A bare @handle needs `platforms` and is looked up on each listed platform. One entry is a single run; a list is a batch. Duplicates are removed before any fetch."),
-    platforms: z.array(z.enum(["tiktok", "instagram", "youtube", "pinterest", "twitch", "threads", "podcast"])).optional().describe("Which platforms a bare @handle is looked up on. A full profile URL carries its own platform and ignores this. This actor does not search; pass the creators you want read. Supported: TikTok, Instagram, YouTube, Pinterest, Twitch, Threads, and podcasts. Not X, not Facebook pages, not LinkedIn."),
-    agency_domains: z.array(z.string()).optional().describe("Agency to roster: one domain per line (for example viralnation.com). Returns one row per creator on the agency's public roster."),
-    agency_names: z.array(z.string()).optional().describe("Agency to roster by name when you do not have the domain. Exact or partial name match against the list."),
-    render_unreadable_pages: z.boolean().optional().describe("Off by default. Some agency roster pages build their talent grid in the browser and return an empty shell to a plain fetch, so the roster reads as empty. Turn this on to render those pages in a headless browser and read the roster from the rendered page. Charged per page rendered (event browser-render) to cover the browser compute, and only when the rendered page comes back readable. A page that answers with a bot challenge is recorded as blocked and is never rendered."),
-    escalate_on_block: z.boolean().optional().describe("On by default. A profile fetch that comes back as a bot detection page is retried once over the residential proxy. On Instagram the bio, bio link, and following are read from the profile page over residential when the embed and the datacenter API did not carry them, and a page that comes back readable charges instagram-bio-fetch ($0.010). Uncheck it to never pay that event: a blocked profile then returns a labeled error row, and Instagram rows keep an empty bio and bio link on about half of the reads."),
-    batch_size: z.number().int().min(1).max(10).optional().describe("Rows fetched at once. Leave empty for the measured per platform default; the measurement is in the README. Higher is faster and, above the measured point, loses rows."),
-    // Shared pool toggle. The actor input field shipped in build 0.1.11; this mirror exists so an
-    // MCP caller can turn the contribution off.
-    contribute_to_shared_pool: z.boolean().optional().describe("On by default. The run contributes the public records it finds to a shared creator and agency pool that all users of this actor read from, so a later run reads what this one found. Only public data that is already in your own output rows is sent: nothing from your Apify account, your input list, your API keys, or your own notes. Nothing is charged for a contribution. Turn this off and the run still reads the pool and writes nothing to it. Default: true."),
-    },
+      `Both directions in one call: handles for creator to agency, agency_domains or agency_names for agency to roster. Prefer lookup_agency_for_creator or list_agency_roster when only one direction is needed. ${COVERAGE} ${PRICING} ${POOL} ${LIMITS}`,
+    annotations: annotations("Look Up an Influencer's Talent Agency or an Agency's Roster"),
+    inputSchema: fields,
   },
-  async (args) =>
-    runActor("zCuX4Mgyg6JvXgGzd", "Influencer Talent Agency Lookup", compact(args as Record<string, unknown>)),
+  async (args) => callActor(args as Record<string, unknown>),
 );
 
 const transport = new StdioServerTransport();

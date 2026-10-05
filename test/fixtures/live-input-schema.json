@@ -1,9 +1,9 @@
 {
   "_provenance": {
     "actorId": "zCuX4Mgyg6JvXgGzd",
-    "buildId": "jKuoJbVCOvDRjcf8L",
-    "buildNumber": "0.1.11",
-    "readAt": "2026-09-23T10:00:50.829Z"
+    "buildId": "VMZrdac4lTnIJaFVQ",
+    "buildNumber": "0.1.20",
+    "readAt": "2026-10-05T15:44:53.744Z"
   },
   "title": "Influencer Talent Agency Lookup input",
   "description": "Creator handles in (creator to agency), or agency domains in (agency to roster). Free Apify plan users get 160 results per calendar month, reset monthly. Upgrade to any paid Apify plan for unlimited use: https://apify.com/pricing?fpr=mamba",
@@ -15,7 +15,9 @@
       "type": "array",
       "description": "One per line. A profile URL on any supported platform (https://www.tiktok.com/@name, https://www.instagram.com/name/, https://www.youtube.com/@name, a Pinterest, Twitch, or Threads profile, an Apple Podcasts show page, or a Spotify show), or platform:@handle (tiktok:@name). A bare @handle needs `platforms` and is looked up on each listed platform. One entry is a single run; a list is a batch. Duplicates are removed before any fetch.",
       "editor": "stringList",
-      "prefill": []
+      "prefill": [
+        "https://www.tiktok.com/@yolandekelly"
+      ]
     },
     "platforms": {
       "title": "Platforms",
