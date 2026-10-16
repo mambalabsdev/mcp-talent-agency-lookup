@@ -6,6 +6,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
+// Optional per call spending cap, passed through to the actor's own max_charge_usd
+// input. The actor enforces it; this wrapper only forwards it when set.
+const MAX_CHARGE_USD = z
+  .number()
+  .min(0)
+  .optional()
+  .describe(
+    "Optional spending cap for this call, in USD, passed to the actor as max_charge_usd. The run stops before any charge that would take it past this amount and keeps every row already charged. Leave empty to rely only on the maximum charge per run set on your Apify account.",
+  );
+
 const here = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
   readFileSync(join(here, "..", "package.json"), "utf8"),
@@ -213,6 +223,7 @@ const fields = {
   // Shared pool toggle. The actor input field shipped in build 0.1.11; this mirror exists so an
   // MCP caller can turn the contribution off.
   contribute_to_shared_pool: z.boolean().optional().describe("On by default. The run contributes the public records it finds to a shared creator and agency pool that all users of this actor read from, so a later run reads what this one found. Only public data that is already in your own output rows is sent: nothing from your Apify account, your input list, your API keys, or your own notes. Nothing is charged for a contribution. Turn this off and the run still reads the pool and writes nothing to it. Default: true."),
+  max_charge_usd: MAX_CHARGE_USD,
 };
 
 const PRICING =
@@ -226,7 +237,7 @@ const LIMITS =
 
 const annotations = (title: string) => ({
   title,
-  readOnlyHint: true,
+  readOnlyHint: false,
   destructiveHint: false,
   idempotentHint: true,
   openWorldHint: true,
@@ -248,6 +259,7 @@ server.registerTool(
       escalate_on_block: fields.escalate_on_block,
       batch_size: fields.batch_size,
       contribute_to_shared_pool: fields.contribute_to_shared_pool,
+      max_charge_usd: MAX_CHARGE_USD,
     },
   },
   async (args) => callActor(args as Record<string, unknown>),
@@ -265,6 +277,7 @@ server.registerTool(
       agency_names: fields.agency_names,
       render_unreadable_pages: fields.render_unreadable_pages,
       contribute_to_shared_pool: fields.contribute_to_shared_pool,
+      max_charge_usd: MAX_CHARGE_USD,
     },
   },
   async (args) => callActor(args as Record<string, unknown>),
