@@ -2,6 +2,8 @@
 
 [![Glama score](https://glama.ai/mcp/servers/mambalabsdev/mcp-talent-agency-lookup/badges/score.svg)](https://glama.ai/mcp/servers/mambalabsdev/mcp-talent-agency-lookup) [![MCP Registry](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fregistry.modelcontextprotocol.io%2Fv0%2Fservers%3Fsearch%3Dcom.mambabuilt%252Fmcp-talent-agency-lookup%26limit%3D1&query=%24.servers%5B0%5D._meta%5B%22io.modelcontextprotocol.registry%2Fofficial%22%5D.status&label=mcp%20registry&color=blue)](https://registry.modelcontextprotocol.io/v0/servers?search=com.mambabuilt/mcp-talent-agency-lookup&limit=1) [![npm version](https://img.shields.io/npm/v/@mambalabsdev/mcp-talent-agency-lookup)](https://www.npmjs.com/package/@mambalabsdev/mcp-talent-agency-lookup) [![npm downloads](https://img.shields.io/npm/dm/@mambalabsdev/mcp-talent-agency-lookup)](https://www.npmjs.com/package/@mambalabsdev/mcp-talent-agency-lookup) [![license](https://img.shields.io/github/license/mambalabsdev/mcp-talent-agency-lookup)](https://github.com/mambalabsdev/mcp-talent-agency-lookup/blob/main/LICENSE) [![mcpservers.org](https://img.shields.io/badge/mcpservers.org-listed-blue)](https://mcpservers.org/servers/mambalabsdev/mcp-talent-agency-lookup)
 
+<a href="https://mcprush.com/to/talent-agency-lookup-mcp?ref=badge"><img width="380" height="200" src="https://mcprush.com/badge/talent-agency-lookup-mcp/card.svg" alt="Talent Agency Lookup MCP server" /></a>
+
 MCP server for the Mamba Labs [Influencer Talent Agency Lookup](https://apify.com/mambalabs/talent-agency-lookup) actor on Apify.
 
 Creator handles in, the talent agency behind each one out. Or an agency in, its public creator roster out.
